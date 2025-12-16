@@ -1,0 +1,147 @@
+import SwiftUI
+import SwiftData
+
+struct CategoryListView: View {
+    @Environment(\.modelContext) private var modelContext
+    let categories: [Category]
+    let parentCategory: Category?
+
+    @State private var showingAddCategory = false
+    @State private var showingAddPerson = false
+    @State private var newCategoryName = ""
+    @State private var newPersonName = ""
+
+    var sortedSubcategories: [Category] {
+        (parentCategory?.subcategories ?? categories).sorted { $0.name < $1.name }
+    }
+
+    var sortedPeople: [Person] {
+        (parentCategory?.people ?? []).sorted { $0.name < $1.name }
+    }
+
+    var body: some View {
+        List {
+            if !sortedSubcategories.isEmpty {
+                Section("Categories") {
+                    ForEach(sortedSubcategories) { subcategory in
+                        NavigationLink {
+                            CategoryListView(categories: subcategory.subcategories ?? [], parentCategory: subcategory)
+                                .navigationTitle(subcategory.name)
+                        } label: {
+                            HStack {
+                                Image(systemName: "folder.fill")
+                                    .foregroundStyle(.blue)
+                                Text(subcategory.name)
+                            }
+                        }
+                    }
+                    .onDelete(perform: deleteCategories)
+                }
+            }
+
+            if !sortedPeople.isEmpty {
+                Section("People") {
+                    ForEach(sortedPeople) { person in
+                        NavigationLink {
+                            PersonDetailView(person: person)
+                        } label: {
+                            HStack {
+                                Image(systemName: "person.circle.fill")
+                                    .foregroundStyle(.green)
+                                Text(person.name)
+                            }
+                        }
+                    }
+                    .onDelete(perform: deletePeople)
+                }
+            }
+
+            if sortedSubcategories.isEmpty && sortedPeople.isEmpty {
+                ContentUnavailableView(
+                    "No Items",
+                    systemImage: "tray",
+                    description: Text("Add a category or person to get started")
+                )
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button {
+                        showingAddCategory = true
+                    } label: {
+                        Label("Add Category", systemImage: "folder.badge.plus")
+                    }
+
+                    Button {
+                        showingAddPerson = true
+                    } label: {
+                        Label("Add Person", systemImage: "person.badge.plus")
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                }
+            }
+        }
+        .alert("New Category", isPresented: $showingAddCategory) {
+            TextField("Category Name", text: $newCategoryName)
+            Button("Cancel", role: .cancel) {
+                newCategoryName = ""
+            }
+            Button("Add") {
+                addCategory()
+            }
+        }
+        .alert("New Person", isPresented: $showingAddPerson) {
+            TextField("Person Name", text: $newPersonName)
+            Button("Cancel", role: .cancel) {
+                newPersonName = ""
+            }
+            Button("Add") {
+                addPerson()
+            }
+        }
+    }
+
+    private func addCategory() {
+        guard !newCategoryName.isEmpty else { return }
+        withAnimation {
+            let newCategory = Category(name: newCategoryName, parentCategory: parentCategory)
+            modelContext.insert(newCategory)
+            newCategoryName = ""
+        }
+    }
+
+    private func addPerson() {
+        guard !newPersonName.isEmpty else { return }
+        withAnimation {
+            let newPerson = Person(name: newPersonName, category: parentCategory)
+            modelContext.insert(newPerson)
+            newPersonName = ""
+        }
+    }
+
+    private func deleteCategories(offsets: IndexSet) {
+        withAnimation {
+            for index in offsets {
+                modelContext.delete(sortedSubcategories[index])
+            }
+        }
+    }
+
+    private func deletePeople(offsets: IndexSet) {
+        withAnimation {
+            for index in offsets {
+                modelContext.delete(sortedPeople[index])
+            }
+        }
+    }
+}
+
+#Preview {
+    NavigationStack {
+        CategoryListView(categories: [], parentCategory: nil)
+            .navigationTitle("NamePocket")
+    }
+    .modelContainer(for: [Category.self, Person.self], inMemory: true)
+}
