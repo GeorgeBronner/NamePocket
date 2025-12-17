@@ -1,0 +1,78 @@
+# Fastfile for NamePocket
+
+default_platform(:ios)
+
+platform :ios do
+
+  desc "Generate screenshots for App Store"
+  lane :screenshots do
+    snapshot
+  end
+
+  desc "Generate screenshots with device frames"
+  lane :screenshots_framed do
+    snapshot
+    frameit(white: true)
+  end
+
+  desc "Setup metadata for App Store"
+  lane :metadata do
+    deliver(
+      skip_screenshots: true,
+      skip_binary_upload: true,
+      skip_app_version_update: true,
+      force: true
+    )
+  end
+
+  desc "Build the app"
+  lane :build do
+    increment_build_number(xcodeproj: "NamePocket.xcodeproj")
+
+    gym(
+      scheme: "NamePocket",
+      export_method: "app-store",
+      clean: true
+    )
+  end
+
+  desc "Upload to TestFlight"
+  lane :beta do
+    build
+
+    pilot(
+      skip_waiting_for_build_processing: true,
+      distribute_external: false
+    )
+  end
+
+  desc "Upload to App Store"
+  lane :release do
+    build
+
+    deliver(
+      submit_for_review: false,
+      automatic_release: false,
+      force: true
+    )
+  end
+
+  desc "Complete App Store preparation: screenshots, metadata, and build"
+  lane :prepare_appstore do
+    screenshots
+    metadata
+
+    UI.success "App Store assets ready! Review screenshots and metadata before uploading."
+    UI.message "To upload to TestFlight, run: fastlane beta"
+    UI.message "To upload to App Store, run: fastlane release"
+  end
+
+  desc "Setup fastlane match for code signing"
+  lane :setup_signing do
+    match(type: "appstore", readonly: true)
+  end
+
+  error do |lane, exception|
+    UI.error "Error in lane #{lane}: #{exception.message}"
+  end
+end

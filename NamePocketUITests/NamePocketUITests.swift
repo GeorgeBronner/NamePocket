@@ -9,33 +9,156 @@ import XCTest
 
 final class NamePocketUITests: XCTestCase {
 
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+    var app: XCUIApplication!
 
-        // In UI tests it is usually best to stop immediately when a failure occurs.
+    @MainActor
+    override func setUpWithError() throws {
         continueAfterFailure = false
 
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
+        app = XCUIApplication()
+        app.launchArguments = ["UI-Testing"]
+
+        // Set up initial state for screenshots
+        setupSnapshot(app)
     }
 
     override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        app = nil
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
-        let app = XCUIApplication()
+    func testScreenshotFlow() throws {
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+        // Give the app time to fully load
+        sleep(2)
+
+        // Screenshot 1: Main screen with empty state
+        snapshot("01-EmptyState")
+
+        // Add a category
+        addCategory(named: "Work")
+        sleep(1)
+
+        // Add another category
+        addCategory(named: "Friends")
+        sleep(1)
+
+        // Add a third category
+        addCategory(named: "Family")
+        sleep(1)
+
+        // Screenshot 2: Main screen with categories
+        snapshot("02-Categories")
+
+        // Navigate into "Friends" category
+        app.staticTexts["Friends"].tap()
+        sleep(1)
+
+        // Add a person in Friends category
+        addPerson(named: "Sarah Johnson")
+        sleep(1)
+
+        // Add another person
+        addPerson(named: "Mike Chen")
+        sleep(1)
+
+        // Add a subcategory
+        addCategory(named: "Close Friends")
+        sleep(1)
+
+        // Screenshot 3: Category with people and subcategories
+        snapshot("03-CategoryWithPeople")
+
+        // Tap on a person to view details
+        app.staticTexts["Sarah Johnson"].tap()
+        sleep(1)
+
+        // Screenshot 4: Person detail view
+        snapshot("04-PersonDetail")
+
+        // Go back
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        sleep(1)
+
+        // Navigate into subcategory
+        app.staticTexts["Close Friends"].tap()
+        sleep(1)
+
+        // Add a person in subcategory
+        addPerson(named: "Alex Rivera")
+        sleep(1)
+
+        // Screenshot 5: Nested category
+        snapshot("05-NestedCategory")
+
+        // Tap on person in subcategory
+        app.staticTexts["Alex Rivera"].tap()
+        sleep(1)
+
+        // Edit person details
+        let nameField = app.textFields["Name"]
+        nameField.tap()
+
+        let phoneField = app.textFields["Phone Number"]
+        phoneField.tap()
+        phoneField.typeText("555-0123")
+
+        let emailField = app.textFields["Email"]
+        emailField.tap()
+        emailField.typeText("alex@example.com")
+
+        sleep(1)
+
+        // Screenshot 6: Editing contact details
+        snapshot("06-EditingContact")
     }
 
-    @MainActor
     func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
             XCUIApplication().launch()
         }
+    }
+
+    // MARK: - Helper Methods
+
+    private func addCategory(named name: String) {
+        // Tap the + button in toolbar
+        app.buttons["plus"].tap()
+        sleep(1)
+
+        // Tap "Add Category" in menu
+        app.buttons["Add Category"].tap()
+        sleep(1)
+
+        // Type category name
+        let alert = app.alerts["New Category"]
+        let textField = alert.textFields["Category Name"]
+        textField.tap()
+        textField.typeText(name)
+
+        // Tap Add button
+        alert.buttons["Add"].tap()
+        sleep(1)
+    }
+
+    private func addPerson(named name: String) {
+        // Tap the + button in toolbar
+        app.buttons["plus"].tap()
+        sleep(1)
+
+        // Tap "Add Person" in menu
+        app.buttons["Add Person"].tap()
+        sleep(1)
+
+        // Type person name
+        let alert = app.alerts["New Person"]
+        let textField = alert.textFields["Person Name"]
+        textField.tap()
+        textField.typeText(name)
+
+        // Tap Add button
+        alert.buttons["Add"].tap()
+        sleep(1)
     }
 }

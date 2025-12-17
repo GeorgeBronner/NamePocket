@@ -1,0 +1,26 @@
+NamePocket is a simple yet powerful contact management app that helps you organize people using custom categories.
+
+KEY FEATURES:
+
+• Unlimited Nested Categories
+Create hierarchical categories to organize your contacts exactly how you want - work, family, hobbies, or any custom structure that fits your life.
+
+• Easy Contact Management
+Store names, phone numbers, emails, and notes for everyone you know. All information is stored locally on your device for privacy.
+
+• Clean, Native Interface
+Built with SwiftUI for a smooth, modern iOS experience that feels right at home on your device.
+
+• Flexible Organization
+Move contacts between categories, create subcategories, and organize your network the way that makes sense to you.
+
+• No Sign-Up Required
+Your contacts stay on your device. No account needed, no cloud sync, just simple local storage.
+
+Perfect for:
+- Organizing professional contacts by company or project
+- Managing family and friend groups
+- Keeping track of hobbyist communities
+- Anyone who wants better contact organization than the default Contacts app
+
+NamePocket keeps your connections organized and accessible, all in your pocket.

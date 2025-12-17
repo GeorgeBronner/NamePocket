@@ -81,6 +81,15 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+fastlane/*.ipa
+fastlane/*.app.dSYM.zip
+
+# Bundler
+vendor/bundle
+.bundle
+
+# Fastlane session
+fastlane_session.txt
 
 # Code Injection
 #
@@ -91,3 +100,5 @@ iOSInjectionProject/
 
 # macOS
 .DS_Store
+.claude/
+

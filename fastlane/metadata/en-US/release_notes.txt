@@ -1,0 +1,9 @@
+Initial release of NamePocket!
+
+• Create unlimited categories and subcategories
+• Store contact information with phone, email, and notes
+• Intuitive SwiftUI interface
+• All data stored locally on device
+• No ads or tracking
+
+We'd love to hear your feedback!

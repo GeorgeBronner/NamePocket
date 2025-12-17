@@ -81,10 +81,12 @@ struct CategoryListView: View {
                 } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityIdentifier("plus")
             }
         }
         .alert("New Category", isPresented: $showingAddCategory) {
             TextField("Category Name", text: $newCategoryName)
+                .accessibilityIdentifier("Category Name")
             Button("Cancel", role: .cancel) {
                 newCategoryName = ""
             }
@@ -94,6 +96,7 @@ struct CategoryListView: View {
         }
         .alert("New Person", isPresented: $showingAddPerson) {
             TextField("Person Name", text: $newPersonName)
+                .accessibilityIdentifier("Person Name")
             Button("Cancel", role: .cancel) {
                 newPersonName = ""
             }

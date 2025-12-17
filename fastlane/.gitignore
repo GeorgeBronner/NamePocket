@@ -1,0 +1,31 @@
+# Fastlane
+*.ipa
+*.dSYM.zip
+*.app
+
+# Fastlane output
+report.xml
+screenshots/**/*.png
+screenshots/**/*.html
+Preview.html
+test_output/
+
+# Deliver/Pilot temporary files
+Deliverfile
+Pilotfile
+
+# Snapshot temporary files
+*.trace
+tmp/
+
+# Match
+*.mobileprovision
+*.certSigningRequest
+*.cer
+*.p12
+
+# Fastlane session
+fastlane_session.txt
+
+# Logs
+*.log

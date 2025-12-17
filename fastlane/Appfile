@@ -1,0 +1,16 @@
+# Appfile for NamePocket
+
+# Your Apple Developer Account details
+apple_id "george.bronner@gmail.com"
+
+# App bundle identifier
+app_identifier "com.bronnerapp.namebuddy"
+
+# Your Apple Developer Team ID
+team_id "GNAWAR3UHM"
+
+# App Store Connect Team ID (if different from Developer Team)
+# itunes_connect_team_id "XXXXXXXXXX"
+
+# For more information about the Appfile, see:
+# https://docs.fastlane.tools/advanced/#appfile

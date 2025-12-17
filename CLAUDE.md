@@ -67,3 +67,52 @@ Navigation flows from root categories down through nested subcategories:
 **Sorted display:** Views compute sorted arrays on-the-fly (e.g., CategoryListView.swift:14-20) rather than using sortBy in queries
 
 **Previews:** All views include SwiftUI previews with in-memory model containers for development
+
+## App Store Preparation
+
+A custom skill is available for App Store submission automation using fastlane.
+
+### Using the App Store Prep Skill
+
+```bash
+/skill app-store-prep
+```
+
+The skill automates:
+- Screenshot generation across all required device sizes
+- App Store metadata management
+- Building and uploading to TestFlight/App Store
+
+### Fastlane Commands
+
+```bash
+# Install dependencies
+bundle install
+
+# Generate screenshots (requires UI test target)
+bundle exec fastlane screenshots
+
+# Update metadata on App Store Connect
+bundle exec fastlane metadata
+
+# Build IPA
+bundle exec fastlane build
+
+# Upload to TestFlight
+bundle exec fastlane beta
+
+# Upload to App Store
+bundle exec fastlane release
+
+# Complete preparation (screenshots + metadata)
+bundle exec fastlane prepare_appstore
+```
+
+### First-Time Setup Required
+
+1. Configure `fastlane/Appfile` with your Apple Developer credentials and bundle ID
+2. Create UI test target (see `.claude/skills/app-store-prep/ui-test-setup.md`)
+3. Customize metadata files in `fastlane/metadata/en-US/`
+4. Set up App Store Connect API key or app-specific password
+
+See `.claude/skills/app-store-prep/README.md` for complete documentation.
