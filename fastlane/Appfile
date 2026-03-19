@@ -4,7 +4,7 @@
 apple_id "george.bronner@gmail.com"
 
 # App bundle identifier
-app_identifier "com.bronnerapp.namebuddy"
+app_identifier "com.bronnerapp.NameBuddy"
 
 # Your Apple Developer Team ID
 team_id "GNAWAR3UHM"
