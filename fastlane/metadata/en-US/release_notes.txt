@@ -1,3 +1,9 @@
+What's new in 1.1:
+
+• You can now rename categories — just long-press any category and tap Rename
+
+---
+
 Initial release of NamePocket!
 
 • Create unlimited categories and subcategories
