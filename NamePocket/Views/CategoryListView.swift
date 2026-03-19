@@ -10,6 +10,8 @@ struct CategoryListView: View {
     @State private var showingAddPerson = false
     @State private var newCategoryName = ""
     @State private var newPersonName = ""
+    @State private var categoryToRename: Category?
+    @State private var renameCategoryName = ""
 
     var sortedSubcategories: [Category] {
         (parentCategory?.subcategories ?? categories).sorted { $0.name < $1.name }
@@ -32,6 +34,19 @@ struct CategoryListView: View {
                                 Image(systemName: "folder.fill")
                                     .foregroundStyle(.blue)
                                 Text(subcategory.name)
+                            }
+                        }
+                        .contextMenu {
+                            Button {
+                                categoryToRename = subcategory
+                                renameCategoryName = subcategory.name
+                            } label: {
+                                Label("Rename", systemImage: "pencil")
+                            }
+                            Button(role: .destructive) {
+                                modelContext.delete(subcategory)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
                             }
                         }
                     }
@@ -104,6 +119,18 @@ struct CategoryListView: View {
                 addPerson()
             }
         }
+        .alert("Rename Category", isPresented: Binding(
+            get: { categoryToRename != nil },
+            set: { if !$0 { categoryToRename = nil } }
+        )) {
+            TextField("Category Name", text: $renameCategoryName)
+            Button("Cancel", role: .cancel) {
+                categoryToRename = nil
+            }
+            Button("Rename") {
+                renameCategory()
+            }
+        }
     }
 
     private func addCategory() {
@@ -122,6 +149,12 @@ struct CategoryListView: View {
             modelContext.insert(newPerson)
             newPersonName = ""
         }
+    }
+
+    private func renameCategory() {
+        guard let category = categoryToRename, !renameCategoryName.isEmpty else { return }
+        category.name = renameCategoryName
+        categoryToRename = nil
     }
 
     private func deleteCategories(offsets: IndexSet) {
