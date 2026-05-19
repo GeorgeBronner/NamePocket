@@ -27,8 +27,6 @@ platform :ios do
 
   desc "Build the app"
   lane :build do
-    increment_build_number(xcodeproj: "NamePocket.xcodeproj")
-
     gym(
       scheme: "NamePocket",
       export_method: "app-store",
@@ -51,9 +49,12 @@ platform :ios do
     build
 
     deliver(
-      submit_for_review: false,
+      app_version: "2.0.0",
+      submit_for_review: true,
       automatic_release: false,
-      force: true
+      force: true,
+      skip_screenshots: true,
+      precheck_include_in_app_purchases: false
     )
   end
 

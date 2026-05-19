@@ -16,6 +16,12 @@
 		A1000013000000000000001 /* PersonDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000014000000000000001 /* PersonDetailView.swift */; };
 		A1000015000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000016000000000000001 /* Assets.xcassets */; };
 		A1000017000000000000001 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000018000000000000001 /* Preview Assets.xcassets */; };
+		F9F3F13221B346179A30A21EEAD28A46 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = AB707FEF50A648528D90A6DE3431852E /* ZIPFoundation */; };
+		67C0172E1558431AB6CCC25F1AEC38B4 /* PhotoRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3DCA8616CB481996BFFAB4DA5502D7 /* PhotoRepository.swift */; };
+		7C8F1252780F4146A973EC9422DB88C2 /* BackupRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E6905E6788F4DEBA8B963A22F13CCE4 /* BackupRepository.swift */; };
+		E1468D857E4D42278E4DCEBEB7FFB2F6 /* PhotoPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 143C21918F9548DD85B50B57164C8DD7 /* PhotoPicker.swift */; };
+		E756D60E75BF4B868A2FD360433EBBDC /* PersonPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C05DBBD01834203BD7E3F0992961DC4 /* PersonPhotoView.swift */; };
+		713BE43BCB8A4DF59DE40C3858320B37 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F026959DE8C74B5FBEED47E49177619A /* SettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,6 +46,11 @@
 		A1000016000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1000018000000000000001 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		A1000019000000000000001 /* NamePocket.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NamePocket.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5E3DCA8616CB481996BFFAB4DA5502D7 /* PhotoRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoRepository.swift; sourceTree = "<group>"; };
+		7E6905E6788F4DEBA8B963A22F13CCE4 /* BackupRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupRepository.swift; sourceTree = "<group>"; };
+		143C21918F9548DD85B50B57164C8DD7 /* PhotoPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoPicker.swift; sourceTree = "<group>"; };
+		1C05DBBD01834203BD7E3F0992961DC4 /* PersonPhotoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonPhotoView.swift; sourceTree = "<group>"; };
+		F026959DE8C74B5FBEED47E49177619A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -58,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F9F3F13221B346179A30A21EEAD28A46 /* ZIPFoundation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -80,6 +92,7 @@
 				A1000004000000000000001 /* ContentView.swift */,
 				A1000024000000000000001 /* Models */,
 				A1000025000000000000001 /* Views */,
+				DF64DEA1AE034DF9AF7C654D55E90746 /* Data */,
 				A1000016000000000000001 /* Assets.xcassets */,
 				A1000026000000000000001 /* Preview Content */,
 			);
@@ -110,6 +123,9 @@
 				A1000010000000000000001 /* CategoryListView.swift */,
 				A1000012000000000000001 /* PersonListView.swift */,
 				A1000014000000000000001 /* PersonDetailView.swift */,
+				143C21918F9548DD85B50B57164C8DD7 /* PhotoPicker.swift */,
+				1C05DBBD01834203BD7E3F0992961DC4 /* PersonPhotoView.swift */,
+				F026959DE8C74B5FBEED47E49177619A /* SettingsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -120,6 +136,15 @@
 				A1000018000000000000001 /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		DF64DEA1AE034DF9AF7C654D55E90746 /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				5E3DCA8616CB481996BFFAB4DA5502D7 /* PhotoRepository.swift */,
+				7E6905E6788F4DEBA8B963A22F13CCE4 /* BackupRepository.swift */,
+			);
+			path = Data;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -160,6 +185,9 @@
 			);
 			dependencies = (
 			);
+			packageProductDependencies = (
+				AB707FEF50A648528D90A6DE3431852E /* ZIPFoundation */,
+			);
 			name = NamePocket;
 			productName = NamePocket;
 			productReference = A1000019000000000000001 /* NamePocket.app */;
@@ -194,6 +222,9 @@
 			);
 			mainGroup = A1000021000000000000001;
 			productRefGroup = A1000023000000000000001 /* Products */;
+			packageReferences = (
+				4D80CD6473B94760ABCDF383BA211040 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
+			);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -241,6 +272,11 @@
 				A1000011000000000000001 /* PersonListView.swift in Sources */,
 				A1000013000000000000001 /* PersonDetailView.swift in Sources */,
 				A1000001000000000000001 /* NamePocketApp.swift in Sources */,
+				67C0172E1558431AB6CCC25F1AEC38B4 /* PhotoRepository.swift in Sources */,
+				7C8F1252780F4146A973EC9422DB88C2 /* BackupRepository.swift in Sources */,
+				E1468D857E4D42278E4DCEBEB7FFB2F6 /* PhotoPicker.swift in Sources */,
+				E756D60E75BF4B868A2FD360433EBBDC /* PersonPhotoView.swift in Sources */,
+				713BE43BCB8A4DF59DE40C3858320B37 /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -253,6 +289,25 @@
 			targetProxy = 5EBC20B02EF224B000B88D37 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4D80CD6473B94760ABCDF383BA211040 /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/weichsel/ZIPFoundation.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.19;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AB707FEF50A648528D90A6DE3431852E /* ZIPFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4D80CD6473B94760ABCDF383BA211040 /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
+			productName = ZIPFoundation;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		5EBC20B22EF224B000B88D37 /* Debug */ = {
@@ -432,11 +487,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_ASSET_PATHS = "\"NamePocket/Preview Content\"";
 				DEVELOPMENT_TEAM = GNAWAR3UHM;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -446,7 +502,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bronnerapp.NameBuddy;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -461,11 +517,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_ASSET_PATHS = "\"NamePocket/Preview Content\"";
 				DEVELOPMENT_TEAM = GNAWAR3UHM;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -475,7 +532,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bronnerapp.NameBuddy;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
