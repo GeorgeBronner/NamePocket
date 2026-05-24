@@ -1,15 +1,4 @@
-What's new in 1.1:
-
-• You can now rename categories — just long-press any category and tap Rename
-
----
-
-Initial release of NamePocket!
-
-• Create unlimited categories and subcategories
-• Store contact information with phone, email, and notes
-• Intuitive SwiftUI interface
-• All data stored locally on device
-• No ads or tracking
-
-We'd love to hear your feedback!
+• Add optional photos to contacts — tap a person's avatar to choose from your library
+• Contact list rows now show photo thumbnails
+• New Settings screen with backup and restore
+• Backup exports your contacts and photos as a ZIP file you can save or share

@@ -9,6 +9,7 @@ final class Person {
     var email: String
     var notes: String
     var createdAt: Date
+    var photoFilename: String?
 
     @Relationship(deleteRule: .nullify)
     var category: Category?

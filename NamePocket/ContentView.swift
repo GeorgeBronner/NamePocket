@@ -17,6 +17,15 @@ struct ContentView: View {
         NavigationStack {
             CategoryListView(categories: rootCategories, parentCategory: nil)
                 .navigationTitle("NamePocket")
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        NavigationLink {
+                            SettingsView()
+                        } label: {
+                            Image(systemName: "gearshape")
+                        }
+                    }
+                }
         }
     }
 }

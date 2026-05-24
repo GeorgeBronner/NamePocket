@@ -61,8 +61,7 @@ struct CategoryListView: View {
                             PersonDetailView(person: person)
                         } label: {
                             HStack {
-                                Image(systemName: "person.circle.fill")
-                                    .foregroundStyle(.green)
+                                PersonPhotoView(personId: person.id.uuidString)
                                 Text(person.name)
                             }
                         }
@@ -168,7 +167,12 @@ struct CategoryListView: View {
     private func deletePeople(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
-                modelContext.delete(sortedPeople[index])
+                let person = sortedPeople[index]
+                let personId = person.id.uuidString
+                modelContext.delete(person)
+                Task {
+                    try? await PhotoRepository.shared.deletePhoto(personId: personId)
+                }
             }
         }
     }
