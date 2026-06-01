@@ -22,6 +22,7 @@
 		E1468D857E4D42278E4DCEBEB7FFB2F6 /* PhotoPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 143C21918F9548DD85B50B57164C8DD7 /* PhotoPicker.swift */; };
 		E756D60E75BF4B868A2FD360433EBBDC /* PersonPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C05DBBD01834203BD7E3F0992961DC4 /* PersonPhotoView.swift */; };
 		713BE43BCB8A4DF59DE40C3858320B37 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F026959DE8C74B5FBEED47E49177619A /* SettingsView.swift */; };
+		C1000001000000000000001 /* TrashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000002000000000000001 /* TrashView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +52,7 @@
 		143C21918F9548DD85B50B57164C8DD7 /* PhotoPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoPicker.swift; sourceTree = "<group>"; };
 		1C05DBBD01834203BD7E3F0992961DC4 /* PersonPhotoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonPhotoView.swift; sourceTree = "<group>"; };
 		F026959DE8C74B5FBEED47E49177619A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		C1000002000000000000001 /* TrashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrashView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -126,6 +128,7 @@
 				143C21918F9548DD85B50B57164C8DD7 /* PhotoPicker.swift */,
 				1C05DBBD01834203BD7E3F0992961DC4 /* PersonPhotoView.swift */,
 				F026959DE8C74B5FBEED47E49177619A /* SettingsView.swift */,
+				C1000002000000000000001 /* TrashView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -277,6 +280,7 @@
 				E1468D857E4D42278E4DCEBEB7FFB2F6 /* PhotoPicker.swift in Sources */,
 				E756D60E75BF4B868A2FD360433EBBDC /* PersonPhotoView.swift in Sources */,
 				713BE43BCB8A4DF59DE40C3858320B37 /* SettingsView.swift in Sources */,
+				C1000001000000000000001 /* TrashView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
