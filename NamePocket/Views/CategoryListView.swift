@@ -1,24 +1,42 @@
 import SwiftUI
 import SwiftData
 
+private enum DeletionCandidate {
+    case person(Person)
+    case category(Category)
+
+    var displayName: String {
+        switch self {
+        case .person(let p): return p.name
+        case .category(let c): return c.name
+        }
+    }
+}
+
 struct CategoryListView: View {
     @Environment(\.modelContext) private var modelContext
     let categories: [Category]
     let parentCategory: Category?
 
+    @AppStorage("showNotesPreview") private var showNotesPreview = true
     @State private var showingAddCategory = false
     @State private var showingAddPerson = false
     @State private var newCategoryName = ""
     @State private var newPersonName = ""
     @State private var categoryToRename: Category?
     @State private var renameCategoryName = ""
+    @State private var deletionCandidate: DeletionCandidate?
 
     var sortedSubcategories: [Category] {
-        (parentCategory?.subcategories ?? categories).sorted { $0.name < $1.name }
+        (parentCategory?.subcategories ?? categories)
+            .filter { $0.deletedAt == nil }
+            .sorted { $0.name < $1.name }
     }
 
     var sortedPeople: [Person] {
-        (parentCategory?.people ?? []).sorted { $0.name < $1.name }
+        (parentCategory?.people ?? [])
+            .filter { $0.deletedAt == nil }
+            .sorted { $0.name < $1.name }
     }
 
     var body: some View {
@@ -44,13 +62,19 @@ struct CategoryListView: View {
                                 Label("Rename", systemImage: "pencil")
                             }
                             Button(role: .destructive) {
-                                modelContext.delete(subcategory)
+                                deletionCandidate = .category(subcategory)
                             } label: {
-                                Label("Delete", systemImage: "trash")
+                                Label("Move to Trash", systemImage: "trash")
+                            }
+                        }
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                deletionCandidate = .category(subcategory)
+                            } label: {
+                                Label("Trash", systemImage: "trash")
                             }
                         }
                     }
-                    .onDelete(perform: deleteCategories)
                 }
             }
 
@@ -62,11 +86,25 @@ struct CategoryListView: View {
                         } label: {
                             HStack {
                                 PersonPhotoView(personId: person.id.uuidString)
-                                Text(person.name)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(person.name)
+                                    if showNotesPreview && !person.notes.isEmpty {
+                                        Text(person.notes.components(separatedBy: "\n").first ?? "")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                }
+                            }
+                        }
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                deletionCandidate = .person(person)
+                            } label: {
+                                Label("Trash", systemImage: "trash")
                             }
                         }
                     }
-                    .onDelete(perform: deletePeople)
                 }
             }
 
@@ -80,13 +118,20 @@ struct CategoryListView: View {
         }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showNotesPreview.toggle()
+                } label: {
+                    Image(systemName: showNotesPreview ? "eye.slash" : "eye")
+                }
+                .accessibilityLabel(showNotesPreview ? "Hide notes preview" : "Show notes preview")
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button {
                         showingAddCategory = true
                     } label: {
                         Label("Add Category", systemImage: "folder.badge.plus")
                     }
-
                     Button {
                         showingAddPerson = true
                     } label: {
@@ -101,34 +146,38 @@ struct CategoryListView: View {
         .alert("New Category", isPresented: $showingAddCategory) {
             TextField("Category Name", text: $newCategoryName)
                 .accessibilityIdentifier("Category Name")
-            Button("Cancel", role: .cancel) {
-                newCategoryName = ""
-            }
-            Button("Add") {
-                addCategory()
-            }
+            Button("Cancel", role: .cancel) { newCategoryName = "" }
+            Button("Add") { addCategory() }
         }
         .alert("New Person", isPresented: $showingAddPerson) {
             TextField("Person Name", text: $newPersonName)
                 .accessibilityIdentifier("Person Name")
-            Button("Cancel", role: .cancel) {
-                newPersonName = ""
-            }
-            Button("Add") {
-                addPerson()
-            }
+            Button("Cancel", role: .cancel) { newPersonName = "" }
+            Button("Add") { addPerson() }
         }
         .alert("Rename Category", isPresented: Binding(
             get: { categoryToRename != nil },
             set: { if !$0 { categoryToRename = nil } }
         )) {
             TextField("Category Name", text: $renameCategoryName)
-            Button("Cancel", role: .cancel) {
-                categoryToRename = nil
+            Button("Cancel", role: .cancel) { categoryToRename = nil }
+            Button("Rename") { renameCategory() }
+        }
+        .confirmationDialog(
+            "Move \"\(deletionCandidate?.displayName ?? "")\" to Trash?",
+            isPresented: Binding(
+                get: { deletionCandidate != nil },
+                set: { if !$0 { deletionCandidate = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Move to Trash", role: .destructive) {
+                if let candidate = deletionCandidate {
+                    moveToTrash(candidate)
+                    deletionCandidate = nil
+                }
             }
-            Button("Rename") {
-                renameCategory()
-            }
+            Button("Cancel", role: .cancel) { deletionCandidate = nil }
         }
     }
 
@@ -156,24 +205,24 @@ struct CategoryListView: View {
         categoryToRename = nil
     }
 
-    private func deleteCategories(offsets: IndexSet) {
+    private func moveToTrash(_ candidate: DeletionCandidate) {
         withAnimation {
-            for index in offsets {
-                modelContext.delete(sortedSubcategories[index])
+            switch candidate {
+            case .person(let person):
+                person.deletedAt = Date()
+            case .category(let category):
+                softDeleteCategory(category)
             }
         }
     }
 
-    private func deletePeople(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                let person = sortedPeople[index]
-                let personId = person.id.uuidString
-                modelContext.delete(person)
-                Task {
-                    try? await PhotoRepository.shared.deletePhoto(personId: personId)
-                }
-            }
+    private func softDeleteCategory(_ category: Category) {
+        category.deletedAt = Date()
+        for sub in category.subcategories ?? [] {
+            softDeleteCategory(sub)
+        }
+        for person in category.people ?? [] {
+            person.deletedAt = Date()
         }
     }
 }

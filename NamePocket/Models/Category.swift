@@ -6,6 +6,7 @@ final class Category {
     var id: UUID
     var name: String
     var createdAt: Date
+    var deletedAt: Date?
 
     @Relationship(deleteRule: .cascade, inverse: \Category.parentCategory)
     var subcategories: [Category]?

@@ -4,14 +4,18 @@ import SwiftData
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var rootCategories: [Category]
+    @Query(filter: #Predicate<Person> { $0.deletedAt != nil }) private var trashedPeople: [Person]
+    @Query(filter: #Predicate<Category> { $0.deletedAt != nil }) private var trashedCategories: [Category]
 
     init() {
         let descriptor = FetchDescriptor<Category>(
-            predicate: #Predicate { $0.parentCategory == nil },
+            predicate: #Predicate { $0.parentCategory == nil && $0.deletedAt == nil },
             sortBy: [SortDescriptor(\.name)]
         )
         _rootCategories = Query(descriptor)
     }
+
+    var trashCount: Int { trashedPeople.count + trashedCategories.count }
 
     var body: some View {
         NavigationStack {
@@ -23,6 +27,24 @@ struct ContentView: View {
                             SettingsView()
                         } label: {
                             Image(systemName: "gearshape")
+                        }
+                    }
+                    ToolbarItem(placement: .topBarLeading) {
+                        NavigationLink {
+                            TrashView()
+                        } label: {
+                            Image(systemName: trashCount > 0 ? "trash.fill" : "trash")
+                                .overlay(alignment: .topTrailing) {
+                                    if trashCount > 0 {
+                                        Text("\(min(trashCount, 99))")
+                                            .font(.system(size: 9, weight: .bold))
+                                            .foregroundStyle(.white)
+                                            .padding(.horizontal, 4)
+                                            .padding(.vertical, 2)
+                                            .background(Color.red, in: Capsule())
+                                            .offset(x: 10, y: -8)
+                                    }
+                                }
                         }
                     }
                 }
