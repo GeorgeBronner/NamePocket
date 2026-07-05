@@ -48,9 +48,9 @@ Navigation flows from root categories down through nested subcategories:
 - `ContentView`: Entry point that queries and displays root categories (where `parentCategory == nil`)
 - `CategoryListView`: Reusable view for any category level, showing subcategories and people
   - Accepts `categories` array and `parentCategory` to determine context
+  - At the root level (no parent category) it also lists uncategorized people
   - Provides add/delete operations for both categories and people at current level
 - `PersonDetailView`: Edit individual person with form fields bound via `@Bindable`
-- `PersonListView`: Currently unused, displays all people across categories
 
 ### Data Flow
 
