@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import ZIPFoundation
 
 actor BackupRepository {
@@ -29,6 +30,9 @@ actor BackupRepository {
         }
 
         let dbBase = try appSupportDir.appendingPathComponent("default.store")
+        // Flush the WAL into the main store file so the zip contains a
+        // consistent snapshot even if a write lands between file copies.
+        checkpointWAL(at: dbBase)
         for suffix in ["", "-wal", "-shm"] {
             let src = URL(fileURLWithPath: dbBase.path + suffix)
             if fileManager.fileExists(atPath: src.path) {
@@ -48,6 +52,20 @@ actor BackupRepository {
         return tempZip
     }
 
+    /// Best-effort `PRAGMA wal_checkpoint(TRUNCATE)` so pending WAL frames are
+    /// merged into the main store before it is copied. Failure is not fatal —
+    /// the `-wal`/`-shm` files are included in the backup as a fallback.
+    private func checkpointWAL(at storeURL: URL) {
+        guard fileManager.fileExists(atPath: storeURL.path) else { return }
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(storeURL.path, &db, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK else {
+            sqlite3_close(db)
+            return
+        }
+        defer { sqlite3_close(db) }
+        sqlite3_exec(db, "PRAGMA wal_checkpoint(TRUNCATE);", nil, nil, nil)
+    }
+
     // MARK: - Stage Restore (applied on next launch)
 
     func stageRestore(from zipURL: URL) throws {
@@ -56,6 +74,12 @@ actor BackupRepository {
 
         guard let archive = Archive(url: zipURL, accessMode: .read) else {
             throw BackupError.archiveReadFailed
+        }
+
+        // Reject archives without the main database entry — otherwise applying
+        // the restore would wipe the live store with nothing to replace it.
+        guard archive.contains(where: { $0.path == "namepocket_database.sqlite" }) else {
+            throw BackupError.unsupportedFormat
         }
 
         let pendingDir = try appSupportDir.appendingPathComponent("pending_restore", isDirectory: true)
@@ -91,6 +115,15 @@ actor BackupRepository {
                                            appropriateFor: nil, create: true) else { return }
         let pendingDir = appSupport.appendingPathComponent("pending_restore", isDirectory: true)
         guard fm.fileExists(atPath: pendingDir.path) else {
+            UserDefaults.standard.removeObject(forKey: "pendingRestore")
+            return
+        }
+
+        // Never touch the live store unless a replacement main store file
+        // actually exists — an incomplete staging must not destroy data.
+        let stagedStore = pendingDir.appendingPathComponent("default.store")
+        guard fm.fileExists(atPath: stagedStore.path) else {
+            try? fm.removeItem(at: pendingDir)
             UserDefaults.standard.removeObject(forKey: "pendingRestore")
             return
         }
