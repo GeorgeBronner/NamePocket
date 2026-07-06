@@ -1,4 +1,4 @@
-• Add optional photos to contacts — tap a person's avatar to choose from your library
-• Contact list rows now show photo thumbnails
-• New Settings screen with backup and restore
-• Backup exports your contacts and photos as a ZIP file you can save or share
+• Contacts without a category now show up on the main screen instead of disappearing
+• More reliable backup and restore, with safeguards against incomplete or corrupt files
+• The app recovers automatically instead of crashing if its local database becomes corrupted
+• Photo save and delete failures now show an alert instead of failing silently
