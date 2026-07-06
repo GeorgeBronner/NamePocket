@@ -25,7 +25,7 @@ actor BackupRepository {
         let tempZip = fileManager.temporaryDirectory
             .appendingPathComponent("namepocket_backup_\(timestamp).zip")
 
-        guard let archive = Archive(url: tempZip, accessMode: .create) else {
+        guard let archive = try? Archive(url: tempZip, accessMode: .create, pathEncoding: nil) else {
             throw BackupError.archiveCreationFailed
         }
 
@@ -72,7 +72,7 @@ actor BackupRepository {
         let header = try Data(contentsOf: zipURL, options: .mappedIfSafe).prefix(2)
         guard header == Data([0x50, 0x4B]) else { throw BackupError.unsupportedFormat }
 
-        guard let archive = Archive(url: zipURL, accessMode: .read) else {
+        guard let archive = try? Archive(url: zipURL, accessMode: .read, pathEncoding: nil) else {
             throw BackupError.archiveReadFailed
         }
 
