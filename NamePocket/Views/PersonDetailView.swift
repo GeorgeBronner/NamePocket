@@ -8,6 +8,8 @@ struct PersonDetailView: View {
     @State private var photoURL: URL? = nil
     @State private var showingPhotoPicker = false
     @State private var showingPhotoOptions = false
+    @State private var showingPhotoError = false
+    @State private var photoErrorMessage = ""
 
     var body: some View {
         Form {
@@ -86,6 +88,11 @@ struct PersonDetailView: View {
             }
             Button("Cancel", role: .cancel) {}
         }
+        .alert("Photo Error", isPresented: $showingPhotoError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(photoErrorMessage)
+        }
     }
 
     private func loadPhoto() async {
@@ -95,24 +102,28 @@ struct PersonDetailView: View {
     private func savePhoto(_ image: UIImage) {
         Task {
             do {
-                let filename = try await PhotoRepository.shared.savePhoto(
+                _ = try await PhotoRepository.shared.savePhoto(
                     personId: person.id.uuidString, image: image)
-                person.photoFilename = filename
                 if var url = try await PhotoRepository.shared.photoURL(personId: person.id.uuidString) {
                     url = url.appending(queryItems: [URLQueryItem(name: "t", value: "\(Date().timeIntervalSince1970)")])
                     photoURL = url
                 }
             } catch {
-                // photo change silently fails; user sees no change
+                photoErrorMessage = error.localizedDescription
+                showingPhotoError = true
             }
         }
     }
 
     private func removePhoto() {
         Task {
-            try? await PhotoRepository.shared.deletePhoto(personId: person.id.uuidString)
-            person.photoFilename = nil
-            photoURL = nil
+            do {
+                try await PhotoRepository.shared.deletePhoto(personId: person.id.uuidString)
+                photoURL = nil
+            } catch {
+                photoErrorMessage = error.localizedDescription
+                showingPhotoError = true
+            }
         }
     }
 }

@@ -18,6 +18,12 @@ struct CategoryListView: View {
     let categories: [Category]
     let parentCategory: Category?
 
+    // People with no category are shown at the root level so they never
+    // become invisible (e.g. added at root, or orphaned when their category
+    // is permanently deleted).
+    @Query(filter: #Predicate<Person> { $0.category == nil && $0.deletedAt == nil })
+    private var uncategorizedPeople: [Person]
+
     @AppStorage("showNotesPreview") private var showNotesPreview = true
     @State private var showingAddCategory = false
     @State private var showingAddPerson = false
@@ -34,9 +40,13 @@ struct CategoryListView: View {
     }
 
     var sortedPeople: [Person] {
-        (parentCategory?.people ?? [])
-            .filter { $0.deletedAt == nil }
-            .sorted { $0.name < $1.name }
+        let people: [Person]
+        if let parentCategory {
+            people = (parentCategory.people ?? []).filter { $0.deletedAt == nil }
+        } else {
+            people = uncategorizedPeople
+        }
+        return people.sorted { $0.name < $1.name }
     }
 
     var body: some View {

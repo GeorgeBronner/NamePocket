@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import CoreData
 
 @main
 struct NamePocketApp: App {
@@ -11,7 +12,63 @@ struct NamePocketApp: App {
     static func makeContainer() -> ModelContainer {
         let schema = Schema([Category.self, Person.self])
         let config = ModelConfiguration(schema: schema)
-        return try! ModelContainer(for: schema, configurations: [config])
+        do {
+            return try ModelContainer(for: schema, configurations: [config])
+        } catch {
+            guard isStoreCorruptionError(error) else {
+                fatalError("Could not create ModelContainer: \(error)")
+            }
+            // The store file itself is unreadable (corrupted file, failed
+            // migration, bad restore). Move it aside so the app can start
+            // with a fresh database instead of crash-looping; the damaged
+            // files are kept on disk for manual recovery. Other failures
+            // (e.g. disk full, permissions) are left to fatalError above
+            // rather than risk wiping a healthy store.
+            moveStoreAside()
+            do {
+                return try ModelContainer(for: schema, configurations: [config])
+            } catch {
+                fatalError("Could not create ModelContainer even after resetting the store: \(error)")
+            }
+        }
+    }
+
+    /// Whether `error` indicates the on-disk store file is damaged or
+    /// incompatible, as opposed to a transient/environmental failure.
+    private static func isStoreCorruptionError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        if nsError.domain == NSSQLiteErrorDomain,
+           [11 /* SQLITE_CORRUPT */, 26 /* SQLITE_NOTADB */].contains(nsError.code) {
+            return true
+        }
+        let corruptionCodes: Set<Int> = [
+            NSPersistentStoreIncompatibleVersionHashError,
+            NSMigrationError,
+            NSMigrationMissingSourceModelError,
+            NSMigrationMissingMappingModelError,
+            NSPersistentStoreIncompatibleSchemaError,
+            NSFileReadCorruptFileError,
+        ]
+        if nsError.domain == NSCocoaErrorDomain, corruptionCodes.contains(nsError.code) {
+            return true
+        }
+        if let underlying = nsError.userInfo[NSUnderlyingErrorKey] as? NSError {
+            return isStoreCorruptionError(underlying)
+        }
+        return false
+    }
+
+    private static func moveStoreAside() {
+        let fm = FileManager.default
+        guard let appSupport = try? fm.url(for: .applicationSupportDirectory, in: .userDomainMask,
+                                           appropriateFor: nil, create: true) else { return }
+        let timestamp = Int(Date().timeIntervalSince1970)
+        for suffix in ["", "-wal", "-shm"] {
+            let store = appSupport.appendingPathComponent("default.store\(suffix)")
+            guard fm.fileExists(atPath: store.path) else { continue }
+            let corrupt = appSupport.appendingPathComponent("default.store\(suffix).corrupt-\(timestamp)")
+            try? fm.moveItem(at: store, to: corrupt)
+        }
     }
 
     var body: some Scene {
@@ -39,11 +96,27 @@ struct NamePocketApp: App {
         }
 
         if let allCategories = try? context.fetch(FetchDescriptor<Category>()) {
-            for category in allCategories {
-                guard let deletedAt = category.deletedAt, deletedAt < cutoff else { continue }
-                // Skip subcategories whose trashed parent will cascade-delete them
-                let parentAlsoPurging = category.parentCategory?.deletedAt.map { $0 < cutoff } ?? false
-                if !parentAlsoPurging {
+            let purgeable = allCategories.filter {
+                guard let deletedAt = $0.deletedAt else { return false }
+                return deletedAt < cutoff
+            }
+            let purgeableIds = Set(purgeable.map(\.id))
+            // Delete only the topmost purgeable category of each chain; the
+            // cascade delete rule removes its descendants. Walking the full
+            // ancestor chain (rather than checking just the immediate parent)
+            // keeps this correct even if a purgeable category is separated
+            // from a purgeable ancestor by a not-yet-purgeable one.
+            for category in purgeable {
+                var coveredByAncestor = false
+                var ancestor = category.parentCategory
+                while let current = ancestor {
+                    if purgeableIds.contains(current.id) {
+                        coveredByAncestor = true
+                        break
+                    }
+                    ancestor = current.parentCategory
+                }
+                if !coveredByAncestor {
                     context.delete(category)
                 }
             }

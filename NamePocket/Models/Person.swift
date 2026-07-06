@@ -10,6 +10,8 @@ final class Person {
     var notes: String
     var createdAt: Date
     var deletedAt: Date?
+    // Legacy field kept for store compatibility — no longer written.
+    // Photos are looked up by person id (see PhotoRepository).
     var photoFilename: String?
 
     @Relationship(deleteRule: .nullify)
