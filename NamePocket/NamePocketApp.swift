@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import CoreData
 
 @main
 struct NamePocketApp: App {
@@ -14,10 +15,15 @@ struct NamePocketApp: App {
         do {
             return try ModelContainer(for: schema, configurations: [config])
         } catch {
-            // The store could not be opened (corrupted file, failed migration,
-            // bad restore). Move it aside so the app can start with a fresh
-            // database instead of crash-looping; the damaged files are kept
-            // on disk for manual recovery.
+            guard isStoreCorruptionError(error) else {
+                fatalError("Could not create ModelContainer: \(error)")
+            }
+            // The store file itself is unreadable (corrupted file, failed
+            // migration, bad restore). Move it aside so the app can start
+            // with a fresh database instead of crash-looping; the damaged
+            // files are kept on disk for manual recovery. Other failures
+            // (e.g. disk full, permissions) are left to fatalError above
+            // rather than risk wiping a healthy store.
             moveStoreAside()
             do {
                 return try ModelContainer(for: schema, configurations: [config])
@@ -25,6 +31,31 @@ struct NamePocketApp: App {
                 fatalError("Could not create ModelContainer even after resetting the store: \(error)")
             }
         }
+    }
+
+    /// Whether `error` indicates the on-disk store file is damaged or
+    /// incompatible, as opposed to a transient/environmental failure.
+    private static func isStoreCorruptionError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        if nsError.domain == NSSQLiteErrorDomain,
+           [11 /* SQLITE_CORRUPT */, 26 /* SQLITE_NOTADB */].contains(nsError.code) {
+            return true
+        }
+        let corruptionCodes: Set<Int> = [
+            NSPersistentStoreIncompatibleVersionHashError,
+            NSMigrationError,
+            NSMigrationMissingSourceModelError,
+            NSMigrationMissingMappingModelError,
+            NSPersistentStoreIncompatibleSchemaError,
+            NSFileReadCorruptFileError,
+        ]
+        if nsError.domain == NSCocoaErrorDomain, corruptionCodes.contains(nsError.code) {
+            return true
+        }
+        if let underlying = nsError.userInfo[NSUnderlyingErrorKey] as? NSError {
+            return isStoreCorruptionError(underlying)
+        }
+        return false
     }
 
     private static func moveStoreAside() {

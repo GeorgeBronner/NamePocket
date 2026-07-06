@@ -88,7 +88,7 @@ struct PersonDetailView: View {
             }
             Button("Cancel", role: .cancel) {}
         }
-        .alert("Couldn't Save Photo", isPresented: $showingPhotoError) {
+        .alert("Photo Error", isPresented: $showingPhotoError) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(photoErrorMessage)
@@ -117,8 +117,13 @@ struct PersonDetailView: View {
 
     private func removePhoto() {
         Task {
-            try? await PhotoRepository.shared.deletePhoto(personId: person.id.uuidString)
-            photoURL = nil
+            do {
+                try await PhotoRepository.shared.deletePhoto(personId: person.id.uuidString)
+                photoURL = nil
+            } catch {
+                photoErrorMessage = error.localizedDescription
+                showingPhotoError = true
+            }
         }
     }
 }
