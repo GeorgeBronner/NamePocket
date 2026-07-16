@@ -20,9 +20,11 @@ struct CategoryListView: View {
 
     // People with no category are shown at the root level so they never
     // become invisible (e.g. added at root, or orphaned when their category
-    // is permanently deleted).
-    @Query(filter: #Predicate<Person> { $0.category == nil && $0.deletedAt == nil })
-    private var uncategorizedPeople: [Person]
+    // is permanently deleted). Passed in rather than fetched with @Query here
+    // because SwiftUI re-evaluates every @Query a view declares on every
+    // render, even nested instances (one per navigation level) that never
+    // read it — this compounds badly for categories with many people.
+    var uncategorizedPeople: [Person] = []
 
     @AppStorage("showNotesPreview") private var showNotesPreview = true
     @State private var showingAddCategory = false
@@ -50,10 +52,12 @@ struct CategoryListView: View {
     }
 
     var body: some View {
+        let subcategories = sortedSubcategories
+        let people = sortedPeople
         List {
-            if !sortedSubcategories.isEmpty {
+            if !subcategories.isEmpty {
                 Section("Categories") {
-                    ForEach(sortedSubcategories) { subcategory in
+                    ForEach(subcategories) { subcategory in
                         NavigationLink {
                             CategoryListView(categories: subcategory.subcategories ?? [], parentCategory: subcategory)
                                 .navigationTitle(subcategory.name)
@@ -88,9 +92,9 @@ struct CategoryListView: View {
                 }
             }
 
-            if !sortedPeople.isEmpty {
+            if !people.isEmpty {
                 Section("People") {
-                    ForEach(sortedPeople) { person in
+                    ForEach(people) { person in
                         NavigationLink {
                             PersonDetailView(person: person)
                         } label: {
@@ -118,7 +122,7 @@ struct CategoryListView: View {
                 }
             }
 
-            if sortedSubcategories.isEmpty && sortedPeople.isEmpty {
+            if subcategories.isEmpty && people.isEmpty {
                 ContentUnavailableView(
                     "No Items",
                     systemImage: "tray",
