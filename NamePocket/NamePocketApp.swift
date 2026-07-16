@@ -13,7 +13,9 @@ struct NamePocketApp: App {
         let schema = Schema([Category.self, Person.self])
         let config = ModelConfiguration(schema: schema)
         do {
-            return try ModelContainer(for: schema, configurations: [config])
+            let container = try ModelContainer(for: schema, configurations: [config])
+            backfillScalarParentIDsIfNeeded(container)
+            return container
         } catch {
             guard isStoreCorruptionError(error) else {
                 fatalError("Could not create ModelContainer: \(error)")
@@ -26,10 +28,45 @@ struct NamePocketApp: App {
             // rather than risk wiping a healthy store.
             moveStoreAside()
             do {
-                return try ModelContainer(for: schema, configurations: [config])
+                let container = try ModelContainer(for: schema, configurations: [config])
+                backfillScalarParentIDsIfNeeded(container)
+                return container
             } catch {
                 fatalError("Could not create ModelContainer even after resetting the store: \(error)")
             }
+        }
+    }
+
+    /// `parentCategoryID`/`categoryID` are scalar mirrors of the
+    /// `parentCategory`/`category` relationships, added so `CategoryListView`
+    /// can filter/sort via SQL instead of traversing the relationship in
+    /// Swift (see Category.parentCategoryID doc comment for why). Existing
+    /// stores — including restored backups, which copy the raw `.sqlite`
+    /// file rather than going through model `init` — predate this column and
+    /// have it NULL. Backfill runs once, synchronously, before the first
+    /// screen renders; it walks the relationship exactly like the old
+    /// per-render code did, but only a single time rather than on every
+    /// `body` evaluation.
+    private static func backfillScalarParentIDsIfNeeded(_ container: ModelContainer) {
+        let context = ModelContext(container)
+        var didChange = false
+
+        if let categories = try? context.fetch(FetchDescriptor<Category>()) {
+            for category in categories where category.parentCategoryID == nil && category.parentCategory != nil {
+                category.parentCategoryID = category.parentCategory?.id
+                didChange = true
+            }
+        }
+
+        if let people = try? context.fetch(FetchDescriptor<Person>()) {
+            for person in people where person.categoryID == nil && person.category != nil {
+                person.categoryID = person.category?.id
+                didChange = true
+            }
+        }
+
+        if didChange {
+            try? context.save()
         }
     }
 

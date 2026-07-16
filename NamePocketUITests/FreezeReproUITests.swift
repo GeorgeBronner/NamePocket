@@ -57,9 +57,12 @@ final class FreezeReproUITests: XCTestCase {
         app.navigationBars.buttons.element(boundBy: 0).tap()
         XCTAssertTrue(friends.waitForExistence(timeout: 10), "Did not return to George after tapping back from Friends")
 
+        // Her "Courtney" record also has a genuine trailing space (confirmed
+        // via sqlite hex dump), same as "Friends" above — match by prefix.
+        let courtneyPredicate = NSPredicate(format: "label BEGINSWITH 'Courtney'")
         let family = app.staticTexts["Family"]
         family.tap()
-        XCTAssertTrue(app.staticTexts["Courtney"].waitForExistence(timeout: 15), "Tapping 'Family' after entering George did not navigate")
+        XCTAssertTrue(app.staticTexts.matching(courtneyPredicate).firstMatch.waitForExistence(timeout: 15), "Tapping 'Family' after entering George did not navigate")
 
         // Also confirm the toolbar (a non-NavigationLink control) still responds,
         // since the report says "does not respond to any presses", not just links.

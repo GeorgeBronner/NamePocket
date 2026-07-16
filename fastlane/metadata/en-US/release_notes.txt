@@ -1,1 +1,1 @@
-• Fixed a freeze that could occur when opening a category with a large number of contacts inside it
+• Fixed a remaining slowdown when navigating between categories, following up on the previous freeze fix

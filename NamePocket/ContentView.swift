@@ -2,25 +2,14 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var rootCategories: [Category]
-    @Query(filter: #Predicate<Person> { $0.category == nil && $0.deletedAt == nil }) private var uncategorizedPeople: [Person]
     @Query(filter: #Predicate<Person> { $0.deletedAt != nil }) private var trashedPeople: [Person]
     @Query(filter: #Predicate<Category> { $0.deletedAt != nil }) private var trashedCategories: [Category]
-
-    init() {
-        let descriptor = FetchDescriptor<Category>(
-            predicate: #Predicate { $0.parentCategory == nil && $0.deletedAt == nil },
-            sortBy: [SortDescriptor(\.name)]
-        )
-        _rootCategories = Query(descriptor)
-    }
 
     var trashCount: Int { trashedPeople.count + trashedCategories.count }
 
     var body: some View {
         NavigationStack {
-            CategoryListView(categories: rootCategories, parentCategory: nil, uncategorizedPeople: uncategorizedPeople)
+            CategoryListView(parentCategory: nil)
                 .navigationTitle("NamePocket")
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
