@@ -14,6 +14,11 @@ final class Person {
     // Photos are looked up by person id (see PhotoRepository).
     var photoFilename: String?
 
+    // Scalar mirror of category?.id — see Category.parentCategoryID for why
+    // this exists. Kept in sync manually at every write site (init,
+    // TrashView detach).
+    var categoryID: UUID?
+
     @Relationship(deleteRule: .nullify)
     var category: Category?
 
@@ -25,5 +30,6 @@ final class Person {
         self.notes = notes
         self.createdAt = Date()
         self.category = category
+        self.categoryID = category?.id
     }
 }

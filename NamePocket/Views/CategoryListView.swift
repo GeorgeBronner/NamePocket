@@ -15,14 +15,22 @@ private enum DeletionCandidate {
 
 struct CategoryListView: View {
     @Environment(\.modelContext) private var modelContext
-    let categories: [Category]
     let parentCategory: Category?
 
-    // People with no category are shown at the root level so they never
-    // become invisible (e.g. added at root, or orphaned when their category
-    // is permanently deleted).
-    @Query(filter: #Predicate<Person> { $0.category == nil && $0.deletedAt == nil })
-    private var uncategorizedPeople: [Person]
+    // Subcategories and people for this screen are fetched on demand into
+    // plain @State arrays — NOT via @Query. SwiftUI's DynamicProperty
+    // contract calls a @Query's update()/fetch on every `body` evaluation,
+    // and body legitimately gets invoked several times per navigation
+    // transaction as part of normal AttributeGraph resolution. Each fetch
+    // costs real time even when scoped to a plain scalar column and sorted
+    // in SQL (SwiftData's Core Data-backed materialization of fetched rows
+    // into model instances is not free), so paying that cost repeatedly
+    // per render compounds into a multi-second-to-minutes freeze — this is
+    // what caused the original George-folder freeze. Fetching once, outside
+    // the render path, and caching into @State makes `body` itself O(1)
+    // regardless of how many times SwiftUI re-invokes it.
+    @State private var subcategories: [Category] = []
+    @State private var people: [Person] = []
 
     @AppStorage("showNotesPreview") private var showNotesPreview = true
     @State private var showingAddCategory = false
@@ -33,29 +41,17 @@ struct CategoryListView: View {
     @State private var renameCategoryName = ""
     @State private var deletionCandidate: DeletionCandidate?
 
-    var sortedSubcategories: [Category] {
-        (parentCategory?.subcategories ?? categories)
-            .filter { $0.deletedAt == nil }
-            .sorted { $0.name < $1.name }
-    }
-
-    var sortedPeople: [Person] {
-        let people: [Person]
-        if let parentCategory {
-            people = (parentCategory.people ?? []).filter { $0.deletedAt == nil }
-        } else {
-            people = uncategorizedPeople
-        }
-        return people.sorted { $0.name < $1.name }
+    init(parentCategory: Category?) {
+        self.parentCategory = parentCategory
     }
 
     var body: some View {
         List {
-            if !sortedSubcategories.isEmpty {
+            if !subcategories.isEmpty {
                 Section("Categories") {
-                    ForEach(sortedSubcategories) { subcategory in
+                    ForEach(subcategories) { subcategory in
                         NavigationLink {
-                            CategoryListView(categories: subcategory.subcategories ?? [], parentCategory: subcategory)
+                            CategoryListView(parentCategory: subcategory)
                                 .navigationTitle(subcategory.name)
                         } label: {
                             HStack {
@@ -88,9 +84,9 @@ struct CategoryListView: View {
                 }
             }
 
-            if !sortedPeople.isEmpty {
+            if !people.isEmpty {
                 Section("People") {
-                    ForEach(sortedPeople) { person in
+                    ForEach(people) { person in
                         NavigationLink {
                             PersonDetailView(person: person)
                         } label: {
@@ -118,7 +114,7 @@ struct CategoryListView: View {
                 }
             }
 
-            if sortedSubcategories.isEmpty && sortedPeople.isEmpty {
+            if subcategories.isEmpty && people.isEmpty {
                 ContentUnavailableView(
                     "No Items",
                     systemImage: "tray",
@@ -189,6 +185,21 @@ struct CategoryListView: View {
             }
             Button("Cancel", role: .cancel) { deletionCandidate = nil }
         }
+        .onAppear { refreshLists() }
+    }
+
+    private func refreshLists() {
+        let parentID = parentCategory?.id
+        let categoryDescriptor = FetchDescriptor<Category>(
+            predicate: #Predicate<Category> { $0.parentCategoryID == parentID && $0.deletedAt == nil },
+            sortBy: [SortDescriptor(\.name)]
+        )
+        let personDescriptor = FetchDescriptor<Person>(
+            predicate: #Predicate<Person> { $0.categoryID == parentID && $0.deletedAt == nil },
+            sortBy: [SortDescriptor(\.name)]
+        )
+        subcategories = (try? modelContext.fetch(categoryDescriptor)) ?? []
+        people = (try? modelContext.fetch(personDescriptor)) ?? []
     }
 
     private func addCategory() {
@@ -198,6 +209,7 @@ struct CategoryListView: View {
             modelContext.insert(newCategory)
             newCategoryName = ""
         }
+        refreshLists()
     }
 
     private func addPerson() {
@@ -207,12 +219,14 @@ struct CategoryListView: View {
             modelContext.insert(newPerson)
             newPersonName = ""
         }
+        refreshLists()
     }
 
     private func renameCategory() {
         guard let category = categoryToRename, !renameCategoryName.isEmpty else { return }
         category.name = renameCategoryName
         categoryToRename = nil
+        refreshLists()
     }
 
     private func moveToTrash(_ candidate: DeletionCandidate) {
@@ -224,6 +238,7 @@ struct CategoryListView: View {
                 softDeleteCategory(category)
             }
         }
+        refreshLists()
     }
 
     private func softDeleteCategory(_ category: Category) {
@@ -239,7 +254,7 @@ struct CategoryListView: View {
 
 #Preview {
     NavigationStack {
-        CategoryListView(categories: [], parentCategory: nil)
+        CategoryListView(parentCategory: nil)
             .navigationTitle("NamePocket")
     }
     .modelContainer(for: [Category.self, Person.self], inMemory: true)

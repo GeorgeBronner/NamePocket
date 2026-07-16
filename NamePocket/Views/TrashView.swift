@@ -174,12 +174,14 @@ struct TrashView: View {
         for sub in category.subcategories ?? [] {
             if sub.deletedAt == nil {
                 sub.parentCategory = nil
+                sub.parentCategoryID = nil
             } else {
                 detachRestoredChildren(sub)
             }
         }
         for person in category.people ?? [] where person.deletedAt == nil {
             person.category = nil
+            person.categoryID = nil
         }
     }
 
