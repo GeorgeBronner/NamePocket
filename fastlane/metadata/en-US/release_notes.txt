@@ -1,4 +1,1 @@
-• Contacts without a category now show up on the main screen instead of disappearing
-• More reliable backup and restore, with safeguards against incomplete or corrupt files
-• The app recovers automatically instead of crashing if its local database becomes corrupted
-• Photo save and delete failures now show an alert instead of failing silently
+• Fixed a freeze that could occur when opening a category with a large number of contacts inside it
