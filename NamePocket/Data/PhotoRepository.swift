@@ -5,8 +5,17 @@ actor PhotoRepository {
 
     private let fileManager = FileManager.default
 
+    // Resolving and verifying the photos directory involves filesystem calls
+    // (`url(for:)`, `fileExists`); since this is an actor, every caller
+    // serializes on this property. The directory never moves once created, so
+    // cache it after the first successful resolution instead of re-doing
+    // those calls on every photo lookup — otherwise a People list with many
+    // rows pays a redundant, serialized filesystem stat per row.
+    private var cachedPhotosDir: URL?
+
     var photosDir: URL {
         get throws {
+            if let cachedPhotosDir { return cachedPhotosDir }
             let dir = try fileManager
                 .url(for: .applicationSupportDirectory, in: .userDomainMask,
                      appropriateFor: nil, create: true)
@@ -14,6 +23,7 @@ actor PhotoRepository {
             if !fileManager.fileExists(atPath: dir.path) {
                 try fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
             }
+            cachedPhotosDir = dir
             return dir
         }
     }
