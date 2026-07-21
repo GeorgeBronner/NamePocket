@@ -50,6 +50,17 @@ actor PhotoRepository {
         return fileManager.fileExists(atPath: file.path) ? file : nil
     }
 
+    /// IDs (filename stems) of every `.jpg` currently on disk. Callers use
+    /// this to check only these candidates against SwiftData instead of
+    /// fetching every `Person` row to build a valid-IDs set — the candidate
+    /// set is bounded by how many people have photos, not the total contact
+    /// count.
+    func photoPersonIds() throws -> Set<String> {
+        let dir = try photosDir
+        let files = (try? fileManager.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
+        return Set(files.filter { $0.pathExtension == "jpg" }.map { $0.deletingPathExtension().lastPathComponent })
+    }
+
     func pruneOrphans(validPersonIds: Set<String>) throws {
         let dir = try photosDir
         let files = (try? fileManager.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []

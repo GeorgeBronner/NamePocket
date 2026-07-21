@@ -206,9 +206,17 @@ struct TrashView: View {
                 detachRestoredChildren(sub)
             }
         }
-        for person in people where person.deletedAt == nil {
-            person.category = nil
-            person.categoryID = nil
+        for person in people {
+            if person.deletedAt == nil {
+                person.category = nil
+                person.categoryID = nil
+            } else {
+                // Still-trashed people are left attached and cascade-deleted
+                // along with `category`, which bypasses permanentlyDelete(person:)
+                // — clean up their photo file explicitly so it isn't orphaned.
+                let personId = person.id.uuidString
+                Task { try? await PhotoRepository.shared.deletePhoto(personId: personId) }
+            }
         }
     }
 

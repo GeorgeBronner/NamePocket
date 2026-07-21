@@ -163,16 +163,25 @@ struct NamePocketApp: App {
             // cascade delete rule removes its descendants. Walking the full
             // ancestor chain (rather than checking just the immediate parent)
             // keeps this correct even if a purgeable category is separated
-            // from a purgeable ancestor by a not-yet-purgeable one.
+            // from a purgeable ancestor by a not-yet-purgeable one. Walked via
+            // the scalar parentCategoryID map built from the already-fetched
+            // trashed rows (not the `parentCategory` relationship) to avoid
+            // an N+1 relationship fault per ancestor — the map has to include
+            // every *trashed* row, not just the purgeable ones, since a
+            // not-yet-purgeable trashed category can sit between two
+            // purgeable ones in the chain.
+            let trashedParentByID = Dictionary(
+                uniqueKeysWithValues: trashedCategoryRows.map { ($0.id, $0.parentCategoryID) }
+            )
             for category in purgeable {
                 var coveredByAncestor = false
-                var ancestor = category.parentCategory
-                while let current = ancestor {
-                    if purgeableIds.contains(current.id) {
+                var currentParentID = category.parentCategoryID
+                while let parentID = currentParentID {
+                    if purgeableIds.contains(parentID) {
                         coveredByAncestor = true
                         break
                     }
-                    ancestor = current.parentCategory
+                    currentParentID = trashedParentByID[parentID] ?? nil
                 }
                 if !coveredByAncestor {
                     context.delete(category)
@@ -182,8 +191,17 @@ struct NamePocketApp: App {
 
         try? context.save()
 
-        guard let people = try? context.fetch(FetchDescriptor<Person>()) else { return }
-        let validIds = Set(people.map { $0.id.uuidString })
-        try? await PhotoRepository.shared.pruneOrphans(validPersonIds: validIds)
+        // Only check IDs that actually have a photo file on disk against
+        // SwiftData, rather than fetching every Person row just to build a
+        // valid-IDs set — this scales with how many people have photos, not
+        // with total contact count.
+        let candidateIds = (try? await PhotoRepository.shared.photoPersonIds()) ?? []
+        guard !candidateIds.isEmpty else { return }
+        let candidateUUIDs = Set(candidateIds.compactMap { UUID(uuidString: $0) })
+        let existingDescriptor = FetchDescriptor<Person>(
+            predicate: #Predicate<Person> { candidateUUIDs.contains($0.id) }
+        )
+        let existingIds = Set(((try? context.fetch(existingDescriptor)) ?? []).map { $0.id.uuidString })
+        try? await PhotoRepository.shared.pruneOrphans(validPersonIds: existingIds)
     }
 }

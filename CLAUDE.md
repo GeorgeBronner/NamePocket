@@ -29,12 +29,24 @@ The app uses SwiftData for persistence with two core models:
 
 - `Category` (Models/Category.swift): Hierarchical categories with self-referencing relationships
   - `parentCategory`: Optional parent (nullable relationship)
+  - `parentCategoryID`: Scalar `UUID?` mirror of `parentCategory?.id`, kept in sync manually at every write site
   - `subcategories`: Array of child categories (cascade delete)
   - `people`: Array of people in this category (cascade delete)
 
 - `Person` (Models/Person.swift): Contact information
   - Fields: name, phoneNumber, email, notes
   - `category`: Optional category assignment (nullable relationship)
+  - `categoryID`: Scalar `UUID?` mirror of `category?.id`, kept in sync manually at every write site
+
+**Why the scalar ID mirrors exist:** SwiftData in this project does not compile
+predicates that traverse a relationship (e.g. `parentCategory?.id == ...`) down
+to SQL — it evaluates them in Swift instead, which caused a severe freeze (see
+`amanda_freeze.md`). Filtering on the scalar `parentCategoryID`/`categoryID`
+columns instead lets fetches happen in SQL. Existing stores (including
+restored backups) predate these columns and are backfilled once via
+`NamePocketApp.backfillScalarParentIDsIfNeeded`, gated by a `UserDefaults`
+flag so the backfill's full-table fetch only runs once per store rather than
+every launch.
 
 **Key relationship behavior:**
 - Deleting a category cascades to all subcategories and their people
@@ -45,26 +57,27 @@ The app uses SwiftData for persistence with two core models:
 
 Navigation flows from root categories down through nested subcategories:
 
-- `ContentView`: Entry point that queries and displays root categories (where `parentCategory == nil`)
+- `ContentView`: Entry point; hosts the `NavigationStack` and delegates the root category list to `CategoryListView(parentCategory: nil)`. Uses `@Query` itself only for the trash-count toolbar badge (a cheap count at the root, not a hot render path)
 - `CategoryListView`: Reusable view for any category level, showing subcategories and people
-  - Accepts `categories` array and `parentCategory` to determine context
+  - Takes a `parentCategory: Category?` and fetches its subcategories/people on demand into plain `@State` arrays (`refreshLists()`), **not** via `@Query` — see below
   - At the root level (no parent category) it also lists uncategorized people
   - Provides add/delete operations for both categories and people at current level
+- `TrashView`: Same `@State` + on-demand-fetch pattern as `CategoryListView` (`refreshTrash()`), for the same reason
 - `PersonDetailView`: Edit individual person with form fields bound via `@Bindable`
 
 ### Data Flow
 
-1. App initialization sets up SwiftData model container in NamePocketApp.swift:10
-2. ContentView queries root categories using FetchDescriptor with predicate
-3. CategoryListView recursively navigates through hierarchy
-4. All mutations (add/delete) use `modelContext` from environment
-5. PersonDetailView uses `@Bindable` for two-way binding with automatic persistence
+1. App initialization sets up SwiftData model container in NamePocketApp.swift, backfilling the scalar ID columns once per store
+2. `CategoryListView`/`TrashView` fetch their contents on `.onAppear` into `@State` arrays via `FetchDescriptor` predicates on the scalar ID columns, and re-fetch explicitly after each local mutation
+3. `CategoryListView` recursively navigates through the hierarchy via `NavigationLink`
+4. All mutations (add/delete/restore) use `modelContext` from environment, followed by an explicit refresh of the local `@State`
+5. `PersonDetailView` uses `@Bindable` for two-way binding with automatic persistence
 
 ## Important Patterns
 
-**Querying root categories:** Use `#Predicate { $0.parentCategory == nil }` to get top-level categories (ContentView.swift:10)
+**Do not use `@Query` for `CategoryListView`/`TrashView`'s main content.** SwiftUI's `DynamicProperty` contract re-runs a `@Query`'s fetch on every `body` evaluation, and `body` is legitimately invoked several times per navigation transaction — for a list with many rows this compounded into a multi-second-to-minutes freeze (see `amanda_freeze.md`). Both views instead fetch once into `@State` on `.onAppear`/after mutations. This is a deliberate, verified-by-regression-test exception to "use `@Query`" as a general default elsewhere — don't revert it without re-reading `amanda_freeze.md` and rerunning `NamePocketUITests/FreezeReproUITests`.
 
-**Sorted display:** Views compute sorted arrays on-the-fly (e.g., CategoryListView.swift:14-20) rather than using sortBy in queries
+**Sorted display:** Views compute sorted arrays once during the fetch (e.g. `CategoryListView.refreshLists()`, `TrashView.refreshTrash()`) rather than as a computed property re-evaluated on every render.
 
 **Previews:** All views include SwiftUI previews with in-memory model containers for development
 

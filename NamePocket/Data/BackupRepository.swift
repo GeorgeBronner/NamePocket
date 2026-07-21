@@ -149,9 +149,9 @@ actor BackupRepository {
         try? fm.removeItem(at: pendingDir)
         UserDefaults.standard.removeObject(forKey: "pendingRestore")
         // The restored store may predate the parentCategoryID/categoryID
-        // scalar columns (see NamePocketApp.backfillCompleteKey), so force
-        // the backfill to re-run against the newly-installed store.
-        UserDefaults.standard.removeObject(forKey: "backfillComplete")
+        // scalar columns, so force the backfill to re-run against the
+        // newly-installed store.
+        UserDefaults.standard.removeObject(forKey: NamePocketApp.backfillCompleteKey)
     }
 }
 

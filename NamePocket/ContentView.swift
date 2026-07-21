@@ -25,11 +25,13 @@ struct ContentView: View {
                         } label: {
                             // The badge is offset outside the bare Image's own
                             // bounds; a plain `.overlay` doesn't grow the
-                            // parent's reported size, so without this frame
+                            // parent's reported size, so without extra room
                             // the toolbar sizes itself to just the icon and
-                            // clips the badge that spills past it. Sizing the
-                            // frame after the overlay gives the toolbar a
-                            // layout box big enough to contain both.
+                            // clips the badge that spills past it. With
+                            // `.topTrailing` alignment the badge's own corner
+                            // starts flush with the icon's, so padding that
+                            // matches the offset exactly covers the overflow
+                            // without guessing at a fixed frame size.
                             Image(systemName: trashCount > 0 ? "trash.fill" : "trash")
                                 .overlay(alignment: .topTrailing) {
                                     if trashCount > 0 {
@@ -42,7 +44,8 @@ struct ContentView: View {
                                             .offset(x: 8, y: -6)
                                     }
                                 }
-                                .frame(width: 28, height: 28)
+                                .padding(.top, 6)
+                                .padding(.trailing, 8)
                         }
                         .accessibilityIdentifier("trash")
                     }
