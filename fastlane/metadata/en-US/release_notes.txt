@@ -1,1 +1,3 @@
-• Fixed a remaining slowdown when navigating between categories, following up on the previous freeze fix
+• Faster app launch, especially with a large number of contacts
+• Fixed a possible freeze when moving a large category to the trash
+• Fixed the trash count badge being cut off in the toolbar

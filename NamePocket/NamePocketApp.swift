@@ -43,11 +43,22 @@ struct NamePocketApp: App {
     /// Swift (see Category.parentCategoryID doc comment for why). Existing
     /// stores — including restored backups, which copy the raw `.sqlite`
     /// file rather than going through model `init` — predate this column and
-    /// have it NULL. Backfill runs once, synchronously, before the first
-    /// screen renders; it walks the relationship exactly like the old
-    /// per-render code did, but only a single time rather than on every
+    /// have it NULL. Backfill walks the relationship exactly like the old
+    /// per-render code did, but only once per store rather than on every
     /// `body` evaluation.
+    ///
+    /// Gated by `backfillCompleteKey` so the full-table fetch this requires
+    /// only runs the first launch after install/restore, not on every cold
+    /// launch — an unconditional fetch here runs on the main thread before
+    /// the first screen renders, which is exactly the "materializing fetched
+    /// rows is expensive" cost this project has already hit freezes from.
+    /// `BackupRepository.applyPendingRestoreIfNeeded` clears the flag when it
+    /// installs a restored store, since that store may predate this column.
+    static let backfillCompleteKey = "backfillComplete"
+
     private static func backfillScalarParentIDsIfNeeded(_ container: ModelContainer) {
+        guard !UserDefaults.standard.bool(forKey: backfillCompleteKey) else { return }
+
         let context = ModelContext(container)
         var didChange = false
 
@@ -68,6 +79,7 @@ struct NamePocketApp: App {
         if didChange {
             try? context.save()
         }
+        UserDefaults.standard.set(true, forKey: backfillCompleteKey)
     }
 
     /// Whether `error` indicates the on-disk store file is damaged or
@@ -122,9 +134,15 @@ struct NamePocketApp: App {
         let context = ModelContext(modelContainer)
         let cutoff = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
 
-        // Permanently purge items that have been in the trash for more than 30 days
-        if let allPeople = try? context.fetch(FetchDescriptor<Person>()) {
-            for person in allPeople {
+        // Permanently purge items that have been in the trash for more than 30 days.
+        // Filtered to deletedAt != nil in the fetch itself (rather than fetching
+        // every row and filtering in Swift) so this doesn't duplicate the
+        // full-table materialization the startup backfill already pays for.
+        let trashedPeopleDescriptor = FetchDescriptor<Person>(
+            predicate: #Predicate<Person> { $0.deletedAt != nil }
+        )
+        if let trashedPeopleRows = try? context.fetch(trashedPeopleDescriptor) {
+            for person in trashedPeopleRows {
                 guard let deletedAt = person.deletedAt, deletedAt < cutoff else { continue }
                 let id = person.id.uuidString
                 context.delete(person)
@@ -132,8 +150,11 @@ struct NamePocketApp: App {
             }
         }
 
-        if let allCategories = try? context.fetch(FetchDescriptor<Category>()) {
-            let purgeable = allCategories.filter {
+        let trashedCategoriesDescriptor = FetchDescriptor<Category>(
+            predicate: #Predicate<Category> { $0.deletedAt != nil }
+        )
+        if let trashedCategoryRows = try? context.fetch(trashedCategoriesDescriptor) {
+            let purgeable = trashedCategoryRows.filter {
                 guard let deletedAt = $0.deletedAt else { return false }
                 return deletedAt < cutoff
             }

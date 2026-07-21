@@ -1,5 +1,17 @@
 # Freeze report: entering "George" folder (iPhone 13, latest iOS)
 
+**Recipe update (2026-07-20):** the "install, launch once, then overwrite the
+store" step order in "Concrete reproduction steps" below now matters. As of
+the performance pass on branch `performace-review-7-20-26`, the startup
+backfill (`NamePocketApp.backfillCompleteKey`) is gated by a `UserDefaults`
+flag so it only runs once per store instead of every launch. Launching once
+against the empty store before copying in a real backup sets that flag
+against the *empty* store; overwriting the store files afterward then skips
+backfill entirely and produces a false "Food subfolder never appears"
+failure that looks like a regression but isn't one. **Seed the backup files
+immediately after install, before the first launch** — don't launch against
+the empty store first.
+
 **Status: major additional fix, shipping as 2.3.1 (build 9). The bounded
 Family-step slowdown reported after 2.3.0 is resolved —
 `FreezeReproUITests.testEnterGeorgeAndTapSubfolders` now passes end to end

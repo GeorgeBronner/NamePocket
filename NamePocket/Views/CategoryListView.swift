@@ -241,12 +241,27 @@ struct CategoryListView: View {
         refreshLists()
     }
 
+    // Walks subcategories/people via scalar-ID-filtered fetches rather than
+    // the `subcategories`/`people` relationships — the same reasoning as the
+    // @State fetch above applies here: relationship access triggers Core
+    // Data faulting per object, which for a large/deep tree run synchronously
+    // on the main thread (this runs directly from a button action) reproduces
+    // the freeze this scalar-ID scheme exists to avoid.
     private func softDeleteCategory(_ category: Category) {
         category.deletedAt = Date()
-        for sub in category.subcategories ?? [] {
+        let categoryID = category.id
+        let subDescriptor = FetchDescriptor<Category>(
+            predicate: #Predicate<Category> { $0.parentCategoryID == categoryID }
+        )
+        let peopleDescriptor = FetchDescriptor<Person>(
+            predicate: #Predicate<Person> { $0.categoryID == categoryID }
+        )
+        let subs = (try? modelContext.fetch(subDescriptor)) ?? []
+        let people = (try? modelContext.fetch(peopleDescriptor)) ?? []
+        for sub in subs {
             softDeleteCategory(sub)
         }
-        for person in category.people ?? [] {
+        for person in people {
             person.deletedAt = Date()
         }
     }

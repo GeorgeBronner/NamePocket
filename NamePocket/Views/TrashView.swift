@@ -3,26 +3,24 @@ import SwiftData
 
 struct TrashView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(filter: #Predicate<Person> { $0.deletedAt != nil }) private var trashedPeople: [Person]
-    @Query(filter: #Predicate<Category> { $0.deletedAt != nil }) private var trashedCategories: [Category]
+
+    // Fetched on demand into plain @State arrays, already sorted, rather than
+    // via @Query — see CategoryListView's @State doc comment for why: @Query
+    // re-fetches on every `body` evaluation, and body is invoked several
+    // times per navigation transaction, so a large trash would reproduce the
+    // same freeze this app previously fixed for the category list.
+    @State private var trashedPeople: [Person] = []
+    @State private var trashedCategories: [Category] = []
 
     @State private var showingEmptyTrashConfirm = false
 
     private let calendar = Calendar.current
 
-    var sortedTrashedPeople: [Person] {
-        trashedPeople.sorted { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
-    }
-
-    var sortedTrashedCategories: [Category] {
-        trashedCategories.sorted { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
-    }
-
     var body: some View {
         List {
-            if !sortedTrashedCategories.isEmpty {
+            if !trashedCategories.isEmpty {
                 Section("Categories") {
-                    ForEach(sortedTrashedCategories) { category in
+                    ForEach(trashedCategories) { category in
                         trashRow(
                             icon: "folder.fill",
                             iconColor: .blue,
@@ -48,9 +46,9 @@ struct TrashView: View {
                 }
             }
 
-            if !sortedTrashedPeople.isEmpty {
+            if !trashedPeople.isEmpty {
                 Section("People") {
-                    ForEach(sortedTrashedPeople) { person in
+                    ForEach(trashedPeople) { person in
                         trashRow(
                             icon: "person.fill",
                             iconColor: .accentColor,
@@ -105,6 +103,20 @@ struct TrashView: View {
         } message: {
             Text("This cannot be undone.")
         }
+        .onAppear { refreshTrash() }
+    }
+
+    private func refreshTrash() {
+        let personDescriptor = FetchDescriptor<Person>(
+            predicate: #Predicate<Person> { $0.deletedAt != nil }
+        )
+        let categoryDescriptor = FetchDescriptor<Category>(
+            predicate: #Predicate<Category> { $0.deletedAt != nil }
+        )
+        let people = (try? modelContext.fetch(personDescriptor)) ?? []
+        let categories = (try? modelContext.fetch(categoryDescriptor)) ?? []
+        trashedPeople = people.sorted { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
+        trashedCategories = categories.sorted { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
     }
 
     @ViewBuilder
@@ -144,6 +156,7 @@ struct TrashView: View {
                 cat = c.parentCategory
             }
         }
+        refreshTrash()
     }
 
     private func restore(category: Category) {
@@ -156,22 +169,36 @@ struct TrashView: View {
                 parent = p.parentCategory
             }
         }
+        refreshTrash()
     }
 
     private func permanentlyDelete(person: Person) {
         let personId = person.id.uuidString
         modelContext.delete(person)
         Task { try? await PhotoRepository.shared.deletePhoto(personId: personId) }
+        refreshTrash()
     }
 
     private func permanentlyDelete(category: Category) {
         // Detach any restored children before cascade deletes them
         detachRestoredChildren(category)
         modelContext.delete(category)
+        refreshTrash()
     }
 
+    // Scalar-ID-filtered fetches rather than the subcategories/people
+    // relationships — see softDeleteCategory in CategoryListView for why.
     private func detachRestoredChildren(_ category: Category) {
-        for sub in category.subcategories ?? [] {
+        let categoryID = category.id
+        let subDescriptor = FetchDescriptor<Category>(
+            predicate: #Predicate<Category> { $0.parentCategoryID == categoryID }
+        )
+        let peopleDescriptor = FetchDescriptor<Person>(
+            predicate: #Predicate<Person> { $0.categoryID == categoryID }
+        )
+        let subs = (try? modelContext.fetch(subDescriptor)) ?? []
+        let people = (try? modelContext.fetch(peopleDescriptor)) ?? []
+        for sub in subs {
             if sub.deletedAt == nil {
                 sub.parentCategory = nil
                 sub.parentCategoryID = nil
@@ -179,7 +206,7 @@ struct TrashView: View {
                 detachRestoredChildren(sub)
             }
         }
-        for person in category.people ?? [] where person.deletedAt == nil {
+        for person in people where person.deletedAt == nil {
             person.category = nil
             person.categoryID = nil
         }
@@ -203,6 +230,7 @@ struct TrashView: View {
                 modelContext.delete(category)
             }
         }
+        refreshTrash()
     }
 }
 
